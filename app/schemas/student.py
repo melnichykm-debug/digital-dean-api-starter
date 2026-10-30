@@ -1,22 +1,53 @@
-from pydantic import BaseModel, ConfigDict
+"""Контракт студента для варіанта 3 (15 % 4 = 3)."""
+from enum import StrEnum
+from typing import Annotated, Self
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints, model_validator
+from pydantic.json_schema import SkipJsonSchema
+
+
+class AcademicStatus(StrEnum):
+    """Явний навчальний перелік станів."""
+    ACTIVE = "active"
+    ACADEMIC_LEAVE = "academic_leave"
+    GRADUATED = "graduated"
+    EXPELLED = "expelled"
+
+
+FullName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=5, max_length=120)]
+GroupCode = Annotated[
+    str, StringConstraints(strip_whitespace=True, pattern=r"^[A-ZА-ЩЬЮЯЄІЇҐ0-9]+-[0-9]{2}$"),
+]
 
 
 class StrictModel(BaseModel):
-    """Базова модель, яка не приймає невідомих полів."""
-
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
 class StudentCreate(StrictModel):
-    # TODO: додайте full_name, email і group_code з обмеженнями.
-    pass
+    full_name: FullName
+    email: EmailStr
+    group_code: GroupCode
+    academic_status: AcademicStatus
 
 
 class StudentRead(StudentCreate):
-    # TODO: додайте серверний ідентифікатор id.
-    pass
+    id: UUID
 
 
 class StudentUpdate(StrictModel):
-    # TODO: оголосіть дозволені необов’язкові поля для часткового оновлення.
-    pass
+    # Пропуск поля дозволений, явний null заборонений валідатором.
+    # SkipJsonSchema прибирає null зі схеми OpenAPI.
+    full_name: FullName | SkipJsonSchema[None] = None
+    email: EmailStr | SkipJsonSchema[None] = None
+    group_code: GroupCode | SkipJsonSchema[None] = None
+    academic_status: AcademicStatus | SkipJsonSchema[None] = None
+
+    @model_validator(mode="after")
+    def require_nonempty_update(self) -> Self:
+        if not self.model_fields_set:
+            raise ValueError("Передайте хоча б одне дозволене поле")
+        if any(getattr(self, field) is None for field in self.model_fields_set):
+            raise ValueError("Передані поля не можуть мати значення null")
+        return self
