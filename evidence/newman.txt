@@ -1,0 +1,127 @@
+newman
+
+Digital Dean Practice 01 Variant 3
+
+→ 01 Health
+  GET http://127.0.0.1:57508/health [200 OK, 140B, 16ms]
+  √  status is 200
+  √  exact health body
+
+→ 02 Create student
+  POST http://127.0.0.1:57508/api/v1/students [201 Created, 396B, 4ms]
+  √  status is 201
+  √  server UUID
+  √  exact allowed fields
+  √  create payload preserved
+
+→ 03 List students
+  GET http://127.0.0.1:57508/api/v1/students [200 OK, 328B, 1ms]
+  √  status is 200
+  √  list includes created student
+
+→ 04 Get student
+  GET http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [200 OK, 326B, 2ms]
+  √  status is 200
+  √  full representation matches creation
+
+→ 05 Missing UUID
+  GET http://127.0.0.1:57508/api/v1/students/00000000-0000-4000-8000-000000000000 [404 Not Found, 222B, 1ms]
+  √  status is 404
+  √  controlled error
+
+→ 06 Partial update
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [200 OK, 326B, 1ms]
+  √  status is 200
+  √  only supplied field changes
+
+→ 07 Malformed JSON
+  POST http://127.0.0.1:57508/api/v1/students [422 Unprocessable Entity, 269B, 1ms]
+  √  status is 422
+  √  JSON validation error
+
+→ 08 Reject is_admin
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [422 Unprocessable Entity, 261B, 1ms]
+  √  status is 422
+  √  unknown field rejected
+
+→ 09 Filter academic_status
+  GET http://127.0.0.1:57508/api/v1/students?academic_status=active [200 OK, 328B, 1ms]
+  √  status is 200
+  √  filter has target and no mismatches
+
+→ 10 Duplicate email
+  POST http://127.0.0.1:57508/api/v1/students [409 Conflict, 255B, 1ms]
+  √  status is 409
+  √  case insensitive duplicate
+
+→ 11 Empty PATCH
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [422 Unprocessable Entity, 313B, 2ms]
+  √  status is 422
+  √  empty update rejected
+
+→ 12 Unknown academic status
+  POST http://127.0.0.1:57508/api/v1/students [422 Unprocessable Entity, 376B, 1ms]
+  √  status is 422
+  √  enum validation error
+
+→ 13 Update academic status
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [200 OK, 334B, 1ms]
+  √  status is 200
+  √  status changes without replacing record
+
+→ 14 Filter changed status
+  GET http://127.0.0.1:57508/api/v1/students?academic_status=academic_leave [200 OK, 336B, 2ms]
+  √  status is 200
+  √  new status visible in filter
+
+→ 15 Reject unknown filter
+  GET http://127.0.0.1:57508/api/v1/students?academic_status=unknown [422 Unprocessable Entity, 377B, 1ms]
+  √  status is 422
+  √  query enum checked
+
+→ 16 Reject id assignment
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [422 Unprocessable Entity, 289B, 1ms]
+  √  status is 422
+  √  server id protected
+
+→ 17 Reject explicit null
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [422 Unprocessable Entity, 332B, 1ms]
+  √  status is 422
+  √  null rejected
+
+→ 18 Create second student
+  POST http://127.0.0.1:57508/api/v1/students [201 Created, 395B, 2ms]
+  √  status is 201
+  √  second UUID differs
+
+→ 19 Email conflict on PATCH
+  PATCH http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [409 Conflict, 255B, 1ms]
+  √  status is 409
+  √  update detects conflict
+
+→ 20 Verify atomicity
+  GET http://127.0.0.1:57508/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16 [200 OK, 334B, 1ms]
+  √  status is 200
+  √  rejected updates had no effect
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              20 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              20 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              42 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 1785ms                                  │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 3.39kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 2ms [min: 1ms, max: 16ms, s.d.: 3ms] │
+└─────────────────────────────────────────────────────────────┘
+(node:17272) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

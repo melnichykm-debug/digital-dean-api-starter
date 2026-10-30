@@ -1,0 +1,57 @@
+{
+  "pytest_exit_code": 0,
+  "newman_exit_code": 0,
+  "smoke_http": {
+    "/health": 200,
+    "/docs": 200,
+    "/openapi.json": 200
+  },
+  "newman_stats": {
+    "iterations": {
+      "total": 1,
+      "pending": 0,
+      "failed": 0
+    },
+    "items": {
+      "total": 20,
+      "pending": 0,
+      "failed": 0
+    },
+    "scripts": {
+      "total": 21,
+      "pending": 0,
+      "failed": 0
+    },
+    "prerequests": {
+      "total": 20,
+      "pending": 0,
+      "failed": 0
+    },
+    "requests": {
+      "total": 20,
+      "pending": 0,
+      "failed": 0
+    },
+    "tests": {
+      "total": 20,
+      "pending": 0,
+      "failed": 0
+    },
+    "assertions": {
+      "total": 42,
+      "pending": 0,
+      "failed": 0
+    },
+    "testScripts": {
+      "total": 20,
+      "pending": 0,
+      "failed": 0
+    },
+    "prerequestScripts": {
+      "total": 1,
+      "pending": 0,
+      "failed": 0
+    }
+  },
+  "newman_failures": 0
+}

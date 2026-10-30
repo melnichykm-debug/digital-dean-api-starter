@@ -1,0 +1,7752 @@
+{
+  "collection": {
+    "item": [
+      {
+        "id": "a9ceec56-570d-4883-b838-f67d61746702",
+        "name": "01 Health",
+        "request": {
+          "url": {
+            "path": [
+              "health"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "1bb28b9d-9b4c-4de1-abc7-f506dc3cfedc",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('exact health body', () => pm.expect(pm.response.json()).to.eql({status: 'ok'}));"
+              ],
+              "_lastExecutionId": "f16b0ef9-02d0-4819-8f54-6b7846f12edf"
+            }
+          }
+        ]
+      },
+      {
+        "id": "bfc061b9-be98-4eb5-ad6e-aa66b324b088",
+        "name": "02 Create student",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"{{student_email}}\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "729df5f3-3d94-47e6-9287-57dd65d62cb3",
+              "type": "text/javascript",
+              "exec": [
+                "const token = pm.variables.replaceIn('{{$guid}}');",
+                "pm.collectionVariables.set('run_token', token);",
+                "pm.collectionVariables.set('student_email', 'student+' + token + '@example.com');"
+              ],
+              "_lastExecutionId": "b4df8828-0eaa-454b-ae5d-03a5e9f30b69"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "e6c228b6-376e-4575-931d-7514760297bb",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                "const body = pm.response.json();",
+                "pm.test('server UUID', () => pm.expect(body.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i));",
+                "pm.test('exact allowed fields', () => pm.expect(body).to.have.all.keys('id','full_name','email','group_code','academic_status'));",
+                "pm.test('create payload preserved', () => { pm.expect(body.full_name).to.eql('Олена Коваль'); pm.expect(body.group_code).to.eql('КН-31'); pm.expect(body.academic_status).to.eql('active'); });",
+                "if (pm.response.code === 201) { pm.collectionVariables.set('student_id', body.id); pm.collectionVariables.set('before', JSON.stringify(body)); pm.collectionVariables.set('duplicate_email', body.email.toUpperCase()); }"
+              ],
+              "_lastExecutionId": "eb3228da-ff13-4309-8da1-70feb0cd6e83"
+            }
+          }
+        ]
+      },
+      {
+        "id": "26fa7e63-cc64-44d5-9f50-2239aa88c572",
+        "name": "03 List students",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "0e97001f-02a8-4e34-a84b-28e8ee8da99f",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('list includes created student', () => { const body=pm.response.json(); pm.expect(body).to.be.an('array'); pm.expect(body.some(s=>s.id===pm.collectionVariables.get('student_id'))).to.eql(true); });"
+              ],
+              "_lastExecutionId": "95c68562-3825-45a3-bc0e-90690b261d2e"
+            }
+          }
+        ]
+      },
+      {
+        "id": "03c4e83a-a95e-471a-a445-785145992310",
+        "name": "04 Get student",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "1fabe891-14fd-4ee1-9eff-7145b4714c5b",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('full representation matches creation', () => pm.expect(pm.response.json()).to.eql(JSON.parse(pm.collectionVariables.get('before'))));"
+              ],
+              "_lastExecutionId": "faa7e074-b062-4031-9839-96f13ad6d1d9"
+            }
+          }
+        ]
+      },
+      {
+        "id": "0887af85-9a2e-40b4-ba43-1f6ded4b9f1b",
+        "name": "05 Missing UUID",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "00000000-0000-4000-8000-000000000000"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "55de4507-397d-4007-8966-03c5cb22cec2",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                "pm.test('controlled error', () => { pm.expect(pm.response.json().detail.code).to.eql('student_not_found'); pm.expect(pm.response.text()).not.to.include('Traceback'); });"
+              ],
+              "_lastExecutionId": "0517e99f-e2fa-43bf-9c7e-40c391ed1bb0"
+            }
+          }
+        ]
+      },
+      {
+        "id": "f0ce73c9-3206-4e9b-bfe6-83148a9bb2cd",
+        "name": "06 Partial update",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"group_code\": \"КН-32\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "065fdced-6bdd-4ac4-96fc-3977db2c0bec",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "const expected = JSON.parse(pm.collectionVariables.get('before')); expected.group_code='КН-32';",
+                "pm.test('only supplied field changes', () => pm.expect(pm.response.json()).to.eql(expected));",
+                "pm.collectionVariables.set('after', JSON.stringify(expected));"
+              ],
+              "_lastExecutionId": "dc89027a-6e77-4dfb-9f74-3ff3df6a5248"
+            }
+          }
+        ]
+      },
+      {
+        "id": "95dd5ac0-1da3-45d6-a57a-cf635472b226",
+        "name": "07 Malformed JSON",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"full_name\":",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "8f162765-87e0-4215-9623-81e65c03324c",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('JSON validation error', () => pm.expect(pm.response.json().detail[0].type).to.eql('json_invalid'));"
+              ],
+              "_lastExecutionId": "de87663e-ade4-4ed0-8a3f-38b694e96d55"
+            }
+          }
+        ]
+      },
+      {
+        "id": "8eb2e897-68a9-451d-b04b-b4f01b321840",
+        "name": "08 Reject is_admin",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"is_admin\": true\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "25eb3154-8db5-4d6b-91ae-7f38b43472e9",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('unknown field rejected', () => pm.expect(pm.response.json().detail[0].type).to.eql('extra_forbidden'));"
+              ],
+              "_lastExecutionId": "2c797e8b-8dac-43c1-af4e-9dca4a2955d8"
+            }
+          }
+        ]
+      },
+      {
+        "id": "83392117-c871-4dee-96ff-5f958c9cd531",
+        "name": "09 Filter academic_status",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [
+              {
+                "key": "academic_status",
+                "value": "active"
+              }
+            ],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "d8c3f4c7-c181-4824-9124-3e96c38ca2d3",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('filter has target and no mismatches', () => { const body=pm.response.json(); pm.expect(body.some(s=>s.id===pm.collectionVariables.get('student_id'))).to.eql(true); pm.expect(body.every(s=>s.academic_status==='active')).to.eql(true); });"
+              ],
+              "_lastExecutionId": "c8914b95-392f-4e27-ab82-bc2877c59c7e"
+            }
+          }
+        ]
+      },
+      {
+        "id": "f299d97d-2e50-47e6-96e1-fdebc5b41253",
+        "name": "10 Duplicate email",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"{{duplicate_email}}\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "e7210921-56b1-418f-bb84-ebecb63bc1e3",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                "pm.test('case insensitive duplicate', () => pm.expect(pm.response.json().detail.code).to.eql('duplicate_email'));"
+              ],
+              "_lastExecutionId": "b5bb2077-80a5-44ce-a8e6-191f995bc0f9"
+            }
+          }
+        ]
+      },
+      {
+        "id": "f6725861-7143-439c-921e-a7dcd88ab3eb",
+        "name": "11 Empty PATCH",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "04ef58a5-5617-42ac-a1ef-26ac3648d2a3",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('empty update rejected', () => pm.expect(pm.response.json().detail[0].type).to.eql('value_error'));"
+              ],
+              "_lastExecutionId": "307b60fc-da7e-4208-a23a-065216736cfc"
+            }
+          }
+        ]
+      },
+      {
+        "id": "b0047d2e-bdbe-43bd-8a14-16160a55db5b",
+        "name": "12 Unknown academic status",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"{{student_email}}\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"unknown\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "c47ed926-5817-4b36-a7a1-8e8493ddfe4e",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('enum validation error', () => pm.expect(pm.response.json().detail[0].loc).to.eql(['body','academic_status']));"
+              ],
+              "_lastExecutionId": "c390be88-f7c3-47fd-a85e-f51648c493d4"
+            }
+          }
+        ]
+      },
+      {
+        "id": "5dddd0fa-d71a-4f90-a238-3738d3c5d4c7",
+        "name": "13 Update academic status",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"academic_status\": \"academic_leave\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "03757937-00a2-4acd-b55b-fe3d5a8fabd8",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "const expected=JSON.parse(pm.collectionVariables.get('after')); expected.academic_status='academic_leave';",
+                "pm.test('status changes without replacing record', () => pm.expect(pm.response.json()).to.eql(expected));",
+                "pm.collectionVariables.set('after', JSON.stringify(expected));"
+              ],
+              "_lastExecutionId": "8c60d2b5-5667-4723-a679-41000e28b02e"
+            }
+          }
+        ]
+      },
+      {
+        "id": "4a86fc97-5c78-4bb0-81d1-636f1698b7c1",
+        "name": "14 Filter changed status",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [
+              {
+                "key": "academic_status",
+                "value": "academic_leave"
+              }
+            ],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "9c4acb47-996c-4a07-b14d-49958c7dc9a0",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('new status visible in filter', () => { const body=pm.response.json(); pm.expect(body.some(s=>s.id===pm.collectionVariables.get('student_id'))).to.eql(true); pm.expect(body.every(s=>s.academic_status==='academic_leave')).to.eql(true); });"
+              ],
+              "_lastExecutionId": "5e4be881-46c5-4666-92b3-ae8fac93e666"
+            }
+          }
+        ]
+      },
+      {
+        "id": "5dfa979c-38f2-4c2a-aed1-99e24f617e9c",
+        "name": "15 Reject unknown filter",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [
+              {
+                "key": "academic_status",
+                "value": "unknown"
+              }
+            ],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "c03b6412-f242-4f19-a903-99b1a3056c74",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('query enum checked', () => pm.expect(pm.response.json().detail[0].loc).to.eql(['query','academic_status']));"
+              ],
+              "_lastExecutionId": "ed430c91-d5a4-4d08-b910-1dedbb69fb59"
+            }
+          }
+        ]
+      },
+      {
+        "id": "d32aa8e7-4ab2-44d8-8638-f3d2d657e650",
+        "name": "16 Reject id assignment",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"id\": \"00000000-0000-4000-8000-000000000000\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "6060dcbc-c52e-43dd-aed1-0c20bfd4132e",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('server id protected', () => pm.expect(pm.response.json().detail[0].type).to.eql('extra_forbidden'));"
+              ],
+              "_lastExecutionId": "33bb16f8-58cc-437c-8854-8b38caa8f8dd"
+            }
+          }
+        ]
+      },
+      {
+        "id": "05bb722f-92e5-4123-830f-bf910368e158",
+        "name": "17 Reject explicit null",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": null\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "28cbe406-5c3e-45be-8afe-1895bec13059",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                "pm.test('null rejected', () => pm.expect(pm.response.json().detail[0].type).to.eql('value_error'));"
+              ],
+              "_lastExecutionId": "c35cfbf0-5ad0-43d2-8c34-5d1c1a6aca09"
+            }
+          }
+        ]
+      },
+      {
+        "id": "896f86c2-91a1-4735-b4a4-864d2c79e018",
+        "name": "18 Create second student",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"second+{{run_token}}@example.com\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "2e4afa78-bfbd-4bd9-b8a2-935b0606feb7",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                "pm.test('second UUID differs', () => pm.expect(pm.response.json().id).not.to.eql(pm.collectionVariables.get('student_id')));",
+                "pm.collectionVariables.set('second_email', pm.response.json().email);"
+              ],
+              "_lastExecutionId": "99756010-f652-42d1-81ed-0bf44931daf2"
+            }
+          }
+        ]
+      },
+      {
+        "id": "2d81a583-6da4-4be6-ae67-19008f3daa12",
+        "name": "19 Email conflict on PATCH",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"{{second_email}}\",\n  \"group_code\": \"КН-33\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "2f5f7fc3-10f9-4180-905a-471a612a3416",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                "pm.test('update detects conflict', () => pm.expect(pm.response.json().detail.code).to.eql('duplicate_email'));"
+              ],
+              "_lastExecutionId": "6393626a-a539-4206-81e2-f76e77391704"
+            }
+          }
+        ]
+      },
+      {
+        "id": "b3c5dd5a-5bc3-43dd-81a5-a6e3c10b2699",
+        "name": "20 Verify atomicity",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "{{student_id}}"
+            ],
+            "host": [
+              "{{base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "4af7dad5-f0a4-43a6-9df8-0f1cd87eb318",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('rejected updates had no effect', () => pm.expect(pm.response.json()).to.eql(JSON.parse(pm.collectionVariables.get('after'))));"
+              ],
+              "_lastExecutionId": "c1900005-1187-414d-8ea1-eeb332dbafc8"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "any",
+        "value": "http://127.0.0.1:8000",
+        "key": "base_url"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "student_id"
+      }
+    ],
+    "info": {
+      "_postman_id": "46749951-59cf-4a47-9498-f24342633694",
+      "name": "Digital Dean Practice 01 Variant 3",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Номер 15, варіант 3. Запускати всі 20 запитів послідовно. Кожен запуск створює унікальні навчальні email.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "id": "27e03bba-f81c-4acf-9477-cb8c81822136",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://127.0.0.1:57508",
+        "key": "base_url"
+      }
+    ]
+  },
+  "globals": {
+    "id": "67da62e5-51d9-4d14-83e1-89e44ec0be3e",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 20,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 21,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 20,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 20,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 20,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 42,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 20,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 2.1,
+      "responseMin": 1,
+      "responseMax": 16,
+      "responseSd": 3.269556544854364,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1793375989977,
+      "completed": 1793375991762
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 20,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "b2e9e0d8-d2ca-4ce1-ab3a-062476eecd6d",
+          "httpRequestId": "84db2353-6596-461a-beae-ef9ac6088edd"
+        },
+        "item": {
+          "id": "a9ceec56-570d-4883-b838-f67d61746702",
+          "name": "01 Health",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1bb28b9d-9b4c-4de1-abc7-f506dc3cfedc",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('exact health body', () => pm.expect(pm.response.json()).to.eql({status: 'ok'}));"
+                ],
+                "_lastExecutionId": "f16b0ef9-02d0-4819-8f54-6b7846f12edf"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "02ffe3c3-31ce-4dfe-a730-ff2643ab7f27",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "cbccd6b5-1fd5-46b8-9095-a65a8a48609f",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:49 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "15"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              111,
+              107,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 16,
+          "responseSize": 15
+        },
+        "id": "a9ceec56-570d-4883-b838-f67d61746702",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "exact health body",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "cc71c2fe-0916-490a-b1fa-95421e719fad",
+          "length": 20,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "874e4d4e-1544-4379-ab71-b11c0953709d"
+        },
+        "item": {
+          "id": "bfc061b9-be98-4eb5-ad6e-aa66b324b088",
+          "name": "02 Create student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"{{student_email}}\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "729df5f3-3d94-47e6-9287-57dd65d62cb3",
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.variables.replaceIn('{{$guid}}');",
+                  "pm.collectionVariables.set('run_token', token);",
+                  "pm.collectionVariables.set('student_email', 'student+' + token + '@example.com');"
+                ],
+                "_lastExecutionId": "b4df8828-0eaa-454b-ae5d-03a5e9f30b69"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "e6c228b6-376e-4575-931d-7514760297bb",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('server UUID', () => pm.expect(body.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i));",
+                  "pm.test('exact allowed fields', () => pm.expect(body).to.have.all.keys('id','full_name','email','group_code','academic_status'));",
+                  "pm.test('create payload preserved', () => { pm.expect(body.full_name).to.eql('Олена Коваль'); pm.expect(body.group_code).to.eql('КН-31'); pm.expect(body.academic_status).to.eql('active'); });",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('student_id', body.id); pm.collectionVariables.set('before', JSON.stringify(body)); pm.collectionVariables.set('duplicate_email', body.email.toUpperCase()); }"
+                ],
+                "_lastExecutionId": "eb3228da-ff13-4309-8da1-70feb0cd6e83"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "4383b7a5-8e5d-49dc-ae90-008a4fe46af4",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "173",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"student+c2fed0dd-2837-423e-b9f5-2d71f6f92e15@example.com\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "42309b5e-a134-4dde-889d-8089f60a43c5",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:49 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "200"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "location",
+              "value": "/api/v1/students/b6d5e308-d273-4559-ad75-e504dd937a16"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              49,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 4,
+          "responseSize": 200
+        },
+        "id": "bfc061b9-be98-4eb5-ad6e-aa66b324b088",
+        "assertions": [
+          {
+            "assertion": "status is 201",
+            "skipped": false
+          },
+          {
+            "assertion": "server UUID",
+            "skipped": false
+          },
+          {
+            "assertion": "exact allowed fields",
+            "skipped": false
+          },
+          {
+            "assertion": "create payload preserved",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "ef5c1a52-b729-4b39-a3c4-8a9c2df9b9b6",
+          "length": 20,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "d5a76122-95c2-4150-89d6-c578decf91f9"
+        },
+        "item": {
+          "id": "26fa7e63-cc64-44d5-9f50-2239aa88c572",
+          "name": "03 List students",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0e97001f-02a8-4e34-a84b-28e8ee8da99f",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('list includes created student', () => { const body=pm.response.json(); pm.expect(body).to.be.an('array'); pm.expect(body.some(s=>s.id===pm.collectionVariables.get('student_id'))).to.eql(true); });"
+                ],
+                "_lastExecutionId": "95c68562-3825-45a3-bc0e-90690b261d2e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "adf05eb5-7800-4dc6-a2a6-42a0027ddaac",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "732b7626-444b-4185-8bf0-c70d096fa8e2",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:49 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "202"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              91,
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              49,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125,
+              93
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 202
+        },
+        "id": "26fa7e63-cc64-44d5-9f50-2239aa88c572",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "list includes created student",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "72f6b973-1756-4667-9bc4-094f605707fb",
+          "length": 20,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "75d2c70e-0ff7-4405-91c0-cc33b2f7087c"
+        },
+        "item": {
+          "id": "03c4e83a-a95e-471a-a445-785145992310",
+          "name": "04 Get student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1fabe891-14fd-4ee1-9eff-7145b4714c5b",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('full representation matches creation', () => pm.expect(pm.response.json()).to.eql(JSON.parse(pm.collectionVariables.get('before'))));"
+                ],
+                "_lastExecutionId": "faa7e074-b062-4031-9839-96f13ad6d1d9"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "64ab2c6a-27ae-4853-8a1c-23775568a9c0",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "5d1f404b-1e57-4309-ac0b-38c705c91ced",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:49 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "200"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              49,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 2,
+          "responseSize": 200
+        },
+        "id": "03c4e83a-a95e-471a-a445-785145992310",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "full representation matches creation",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "ffc6a1ed-1e02-42cf-a380-32c316d514c9",
+          "length": 20,
+          "cycles": 1,
+          "position": 4,
+          "iteration": 0,
+          "httpRequestId": "064c0cdd-27b3-4599-bc2b-1e0c72b7585d"
+        },
+        "item": {
+          "id": "0887af85-9a2e-40b4-ba43-1f6ded4b9f1b",
+          "name": "05 Missing UUID",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "00000000-0000-4000-8000-000000000000"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "55de4507-397d-4007-8966-03c5cb22cec2",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('controlled error', () => { pm.expect(pm.response.json().detail.code).to.eql('student_not_found'); pm.expect(pm.response.text()).not.to.include('Traceback'); });"
+                ],
+                "_lastExecutionId": "0517e99f-e2fa-43bf-9c7e-40c391ed1bb0"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "00000000-0000-4000-8000-000000000000"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "f54807fd-aa48-49ef-b1d3-6f766b3410b0",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "1eca1f3b-7356-4b8d-a572-e05c6d286d64",
+          "status": "Not Found",
+          "code": 404,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "90"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              95,
+              110,
+              111,
+              116,
+              95,
+              102,
+              111,
+              117,
+              110,
+              100,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              208,
+              161,
+              209,
+              130,
+              209,
+              131,
+              208,
+              180,
+              208,
+              181,
+              208,
+              189,
+              209,
+              130,
+              208,
+              176,
+              32,
+              208,
+              189,
+              208,
+              181,
+              32,
+              208,
+              183,
+              208,
+              189,
+              208,
+              176,
+              208,
+              185,
+              208,
+              180,
+              208,
+              181,
+              208,
+              189,
+              208,
+              190,
+              34,
+              125,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 90
+        },
+        "id": "0887af85-9a2e-40b4-ba43-1f6ded4b9f1b",
+        "assertions": [
+          {
+            "assertion": "status is 404",
+            "skipped": false
+          },
+          {
+            "assertion": "controlled error",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "9fed2c93-f219-46ae-83e7-b01efec73286",
+          "length": 20,
+          "cycles": 1,
+          "position": 5,
+          "iteration": 0,
+          "httpRequestId": "42974979-4d82-41f5-a723-0d210be692a1"
+        },
+        "item": {
+          "id": "f0ce73c9-3206-4e9b-bfe6-83148a9bb2cd",
+          "name": "06 Partial update",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group_code\": \"КН-32\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "065fdced-6bdd-4ac4-96fc-3977db2c0bec",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const expected = JSON.parse(pm.collectionVariables.get('before')); expected.group_code='КН-32';",
+                  "pm.test('only supplied field changes', () => pm.expect(pm.response.json()).to.eql(expected));",
+                  "pm.collectionVariables.set('after', JSON.stringify(expected));"
+                ],
+                "_lastExecutionId": "dc89027a-6e77-4dfb-9f74-3ff3df6a5248"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "251a289c-af8b-4000-90bd-4701070374fe",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "29",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"group_code\": \"КН-32\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "7efe70e9-c144-4232-8703-40138562c3de",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "200"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              50,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 200
+        },
+        "id": "f0ce73c9-3206-4e9b-bfe6-83148a9bb2cd",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "only supplied field changes",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "4e60f908-f751-42b6-9c02-7f5073b9148f",
+          "length": 20,
+          "cycles": 1,
+          "position": 6,
+          "iteration": 0,
+          "httpRequestId": "32e93166-0050-470c-bf34-c70a7976c4e1"
+        },
+        "item": {
+          "id": "95dd5ac0-1da3-45d6-a57a-cf635472b226",
+          "name": "07 Malformed JSON",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"full_name\":",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8f162765-87e0-4215-9623-81e65c03324c",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('JSON validation error', () => pm.expect(pm.response.json().detail[0].type).to.eql('json_invalid'));"
+                ],
+                "_lastExecutionId": "de87663e-ade4-4ed0-8a3f-38b694e96d55"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "796ac6f9-6c23-40f2-8dd7-6624bb774f97",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "13",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"full_name\":",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "94d1a3f1-bbc9-49d3-adcd-5309e68ec6a3",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "125"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              106,
+              115,
+              111,
+              110,
+              95,
+              105,
+              110,
+              118,
+              97,
+              108,
+              105,
+              100,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              98,
+              111,
+              100,
+              121,
+              34,
+              44,
+              49,
+              51,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              74,
+              83,
+              79,
+              78,
+              32,
+              100,
+              101,
+              99,
+              111,
+              100,
+              101,
+              32,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              123,
+              125,
+              44,
+              34,
+              99,
+              116,
+              120,
+              34,
+              58,
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              69,
+              120,
+              112,
+              101,
+              99,
+              116,
+              105,
+              110,
+              103,
+              32,
+              118,
+              97,
+              108,
+              117,
+              101,
+              34,
+              125,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 125
+        },
+        "id": "95dd5ac0-1da3-45d6-a57a-cf635472b226",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "JSON validation error",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "816ee994-4be5-4a52-8e58-67855d11b5c2",
+          "length": 20,
+          "cycles": 1,
+          "position": 7,
+          "iteration": 0,
+          "httpRequestId": "b0e7116a-55e6-4626-91ea-db42a2215c30"
+        },
+        "item": {
+          "id": "8eb2e897-68a9-451d-b04b-b4f01b321840",
+          "name": "08 Reject is_admin",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_admin\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "25eb3154-8db5-4d6b-91ae-7f38b43472e9",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('unknown field rejected', () => pm.expect(pm.response.json().detail[0].type).to.eql('extra_forbidden'));"
+                ],
+                "_lastExecutionId": "2c797e8b-8dac-43c1-af4e-9dca4a2955d8"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "d34e1d90-1544-4f30-b9bb-1977652f14df",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "22",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"is_admin\": true\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "e0483a48-23e0-4e99-821a-61bfb7308393",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "117"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              101,
+              120,
+              116,
+              114,
+              97,
+              95,
+              102,
+              111,
+              114,
+              98,
+              105,
+              100,
+              100,
+              101,
+              110,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              98,
+              111,
+              100,
+              121,
+              34,
+              44,
+              34,
+              105,
+              115,
+              95,
+              97,
+              100,
+              109,
+              105,
+              110,
+              34,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              69,
+              120,
+              116,
+              114,
+              97,
+              32,
+              105,
+              110,
+              112,
+              117,
+              116,
+              115,
+              32,
+              97,
+              114,
+              101,
+              32,
+              110,
+              111,
+              116,
+              32,
+              112,
+              101,
+              114,
+              109,
+              105,
+              116,
+              116,
+              101,
+              100,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 117
+        },
+        "id": "8eb2e897-68a9-451d-b04b-b4f01b321840",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "unknown field rejected",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "1464f262-14a5-4349-98c6-6b2790221589",
+          "length": 20,
+          "cycles": 1,
+          "position": 8,
+          "iteration": 0,
+          "httpRequestId": "626ee9a9-a4e3-42f9-85f0-e92f114442a6"
+        },
+        "item": {
+          "id": "83392117-c871-4dee-96ff-5f958c9cd531",
+          "name": "09 Filter academic_status",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [
+                {
+                  "key": "academic_status",
+                  "value": "active"
+                }
+              ],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d8c3f4c7-c181-4824-9124-3e96c38ca2d3",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('filter has target and no mismatches', () => { const body=pm.response.json(); pm.expect(body.some(s=>s.id===pm.collectionVariables.get('student_id'))).to.eql(true); pm.expect(body.every(s=>s.academic_status==='active')).to.eql(true); });"
+                ],
+                "_lastExecutionId": "c8914b95-392f-4e27-ab82-bc2877c59c7e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [
+              {
+                "key": "academic_status",
+                "value": "active"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "495e9818-e9f1-4978-89dd-466e8c2d4c6b",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "a3e128b6-fc03-4548-ac0b-c851bdb3cf72",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "202"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              91,
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              50,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125,
+              93
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 202
+        },
+        "id": "83392117-c871-4dee-96ff-5f958c9cd531",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "filter has target and no mismatches",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "85e9e67c-d401-4c2c-a2a2-f0727c35c95c",
+          "length": 20,
+          "cycles": 1,
+          "position": 9,
+          "iteration": 0,
+          "httpRequestId": "7832e4c8-2f8d-4284-b307-eba39a075202"
+        },
+        "item": {
+          "id": "f299d97d-2e50-47e6-96e1-fdebc5b41253",
+          "name": "10 Duplicate email",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"{{duplicate_email}}\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e7210921-56b1-418f-bb84-ebecb63bc1e3",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                  "pm.test('case insensitive duplicate', () => pm.expect(pm.response.json().detail.code).to.eql('duplicate_email'));"
+                ],
+                "_lastExecutionId": "b5bb2077-80a5-44ce-a8e6-191f995bc0f9"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "87eb03ac-5109-4396-8ac2-d9eec0e14868",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "173",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"STUDENT+C2FED0DD-2837-423E-B9F5-2D71F6F92E15@EXAMPLE.COM\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "77106b26-086c-4edb-885f-c0c3f17366e5",
+          "status": "Conflict",
+          "code": 409,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "123"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              100,
+              117,
+              112,
+              108,
+              105,
+              99,
+              97,
+              116,
+              101,
+              95,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              208,
+              149,
+              208,
+              187,
+              208,
+              181,
+              208,
+              186,
+              209,
+              130,
+              209,
+              128,
+              208,
+              190,
+              208,
+              189,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              176,
+              208,
+              180,
+              209,
+              128,
+              208,
+              181,
+              209,
+              129,
+              208,
+              176,
+              32,
+              208,
+              178,
+              208,
+              182,
+              208,
+              181,
+              32,
+              208,
+              178,
+              208,
+              184,
+              208,
+              186,
+              208,
+              190,
+              209,
+              128,
+              208,
+              184,
+              209,
+              129,
+              209,
+              130,
+              208,
+              190,
+              208,
+              178,
+              209,
+              131,
+              209,
+              148,
+              209,
+              130,
+              209,
+              140,
+              209,
+              129,
+              209,
+              143,
+              34,
+              125,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 123
+        },
+        "id": "f299d97d-2e50-47e6-96e1-fdebc5b41253",
+        "assertions": [
+          {
+            "assertion": "status is 409",
+            "skipped": false
+          },
+          {
+            "assertion": "case insensitive duplicate",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "e8a53931-b290-4733-b80d-7d2d4bef6f44",
+          "length": 20,
+          "cycles": 1,
+          "position": 10,
+          "iteration": 0,
+          "httpRequestId": "ea98a369-a309-4788-99de-68b3f0c020db"
+        },
+        "item": {
+          "id": "f6725861-7143-439c-921e-a7dcd88ab3eb",
+          "name": "11 Empty PATCH",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "04ef58a5-5617-42ac-a1ef-26ac3648d2a3",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('empty update rejected', () => pm.expect(pm.response.json().detail[0].type).to.eql('value_error'));"
+                ],
+                "_lastExecutionId": "307b60fc-da7e-4208-a23a-065216736cfc"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "deb8796a-6f1e-4f03-a165-f00f11d45edd",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "2",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "3e116f5d-2234-422c-8233-544761b147ff",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "169"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              118,
+              97,
+              108,
+              117,
+              101,
+              95,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              98,
+              111,
+              100,
+              121,
+              34,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              86,
+              97,
+              108,
+              117,
+              101,
+              32,
+              101,
+              114,
+              114,
+              111,
+              114,
+              44,
+              32,
+              208,
+              159,
+              208,
+              181,
+              209,
+              128,
+              208,
+              181,
+              208,
+              180,
+              208,
+              176,
+              208,
+              185,
+              209,
+              130,
+              208,
+              181,
+              32,
+              209,
+              133,
+              208,
+              190,
+              209,
+              135,
+              208,
+              176,
+              32,
+              208,
+              177,
+              32,
+              208,
+              190,
+              208,
+              180,
+              208,
+              189,
+              208,
+              181,
+              32,
+              208,
+              180,
+              208,
+              190,
+              208,
+              183,
+              208,
+              178,
+              208,
+              190,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              181,
+              32,
+              208,
+              191,
+              208,
+              190,
+              208,
+              187,
+              208,
+              181,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              123,
+              125,
+              44,
+              34,
+              99,
+              116,
+              120,
+              34,
+              58,
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              123,
+              125,
+              125,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 2,
+          "responseSize": 169
+        },
+        "id": "f6725861-7143-439c-921e-a7dcd88ab3eb",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "empty update rejected",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "681ca0f1-bb8b-41d7-9ec3-9a72ed4def98",
+          "length": 20,
+          "cycles": 1,
+          "position": 11,
+          "iteration": 0,
+          "httpRequestId": "2b8a3db3-1a55-437d-af84-fb1736c6f558"
+        },
+        "item": {
+          "id": "b0047d2e-bdbe-43bd-8a14-16160a55db5b",
+          "name": "12 Unknown academic status",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"{{student_email}}\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"unknown\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c47ed926-5817-4b36-a7a1-8e8493ddfe4e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('enum validation error', () => pm.expect(pm.response.json().detail[0].loc).to.eql(['body','academic_status']));"
+                ],
+                "_lastExecutionId": "c390be88-f7c3-47fd-a85e-f51648c493d4"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "83428e50-a8f3-474a-8766-5c28d44dd40c",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "174",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"student+c2fed0dd-2837-423e-b9f5-2d71f6f92e15@example.com\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"unknown\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "3ac99271-5bd9-4836-9561-fdb5337488fa",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "232"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              101,
+              110,
+              117,
+              109,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              98,
+              111,
+              100,
+              121,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              73,
+              110,
+              112,
+              117,
+              116,
+              32,
+              115,
+              104,
+              111,
+              117,
+              108,
+              100,
+              32,
+              98,
+              101,
+              32,
+              39,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              103,
+              114,
+              97,
+              100,
+              117,
+              97,
+              116,
+              101,
+              100,
+              39,
+              32,
+              111,
+              114,
+              32,
+              39,
+              101,
+              120,
+              112,
+              101,
+              108,
+              108,
+              101,
+              100,
+              39,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              34,
+              117,
+              110,
+              107,
+              110,
+              111,
+              119,
+              110,
+              34,
+              44,
+              34,
+              99,
+              116,
+              120,
+              34,
+              58,
+              123,
+              34,
+              101,
+              120,
+              112,
+              101,
+              99,
+              116,
+              101,
+              100,
+              34,
+              58,
+              34,
+              39,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              103,
+              114,
+              97,
+              100,
+              117,
+              97,
+              116,
+              101,
+              100,
+              39,
+              32,
+              111,
+              114,
+              32,
+              39,
+              101,
+              120,
+              112,
+              101,
+              108,
+              108,
+              101,
+              100,
+              39,
+              34,
+              125,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 232
+        },
+        "id": "b0047d2e-bdbe-43bd-8a14-16160a55db5b",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "enum validation error",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "9c1f4d08-84c8-4081-bb0a-6157a250ca71",
+          "length": 20,
+          "cycles": 1,
+          "position": 12,
+          "iteration": 0,
+          "httpRequestId": "92ef62f5-78a9-4ab1-b41e-5868fa453a6c"
+        },
+        "item": {
+          "id": "5dddd0fa-d71a-4f90-a238-3738d3c5d4c7",
+          "name": "13 Update academic status",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"academic_status\": \"academic_leave\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "03757937-00a2-4acd-b55b-fe3d5a8fabd8",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const expected=JSON.parse(pm.collectionVariables.get('after')); expected.academic_status='academic_leave';",
+                  "pm.test('status changes without replacing record', () => pm.expect(pm.response.json()).to.eql(expected));",
+                  "pm.collectionVariables.set('after', JSON.stringify(expected));"
+                ],
+                "_lastExecutionId": "8c60d2b5-5667-4723-a679-41000e28b02e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "70ec6834-7405-492d-ae1d-a8e5ec4af8ba",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "41",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"academic_status\": \"academic_leave\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "dec4df0f-11ee-4d10-97a3-e1bc94c9bb65",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "208"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              50,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 208
+        },
+        "id": "5dddd0fa-d71a-4f90-a238-3738d3c5d4c7",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "status changes without replacing record",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "7db76b21-289f-40c0-b309-8712acf2f034",
+          "length": 20,
+          "cycles": 1,
+          "position": 13,
+          "iteration": 0,
+          "httpRequestId": "22531301-6435-4b3a-b985-b5194ed20645"
+        },
+        "item": {
+          "id": "4a86fc97-5c78-4bb0-81d1-636f1698b7c1",
+          "name": "14 Filter changed status",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [
+                {
+                  "key": "academic_status",
+                  "value": "academic_leave"
+                }
+              ],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9c4acb47-996c-4a07-b14d-49958c7dc9a0",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('new status visible in filter', () => { const body=pm.response.json(); pm.expect(body.some(s=>s.id===pm.collectionVariables.get('student_id'))).to.eql(true); pm.expect(body.every(s=>s.academic_status==='academic_leave')).to.eql(true); });"
+                ],
+                "_lastExecutionId": "5e4be881-46c5-4666-92b3-ae8fac93e666"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [
+              {
+                "key": "academic_status",
+                "value": "academic_leave"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "d8d968aa-2233-489e-a9fa-afa0339dc894",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "eb8134aa-1e14-4826-841e-e47406e51b30",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "210"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              91,
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              50,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125,
+              93
+            ]
+          },
+          "cookie": [],
+          "responseTime": 2,
+          "responseSize": 210
+        },
+        "id": "4a86fc97-5c78-4bb0-81d1-636f1698b7c1",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "new status visible in filter",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "8571c4ca-151a-4940-ac6f-32c0aded7445",
+          "length": 20,
+          "cycles": 1,
+          "position": 14,
+          "iteration": 0,
+          "httpRequestId": "48c6206a-b049-4d05-bfd9-34bf5224dc33"
+        },
+        "item": {
+          "id": "5dfa979c-38f2-4c2a-aed1-99e24f617e9c",
+          "name": "15 Reject unknown filter",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [
+                {
+                  "key": "academic_status",
+                  "value": "unknown"
+                }
+              ],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c03b6412-f242-4f19-a903-99b1a3056c74",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('query enum checked', () => pm.expect(pm.response.json().detail[0].loc).to.eql(['query','academic_status']));"
+                ],
+                "_lastExecutionId": "ed430c91-d5a4-4d08-b910-1dedbb69fb59"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [
+              {
+                "key": "academic_status",
+                "value": "unknown"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "aa71afc4-4bbe-49bb-9d38-d2cbd33ba223",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "4b227e58-1b73-4645-bd12-c09865b38aba",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:50 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "233"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              101,
+              110,
+              117,
+              109,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              113,
+              117,
+              101,
+              114,
+              121,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              73,
+              110,
+              112,
+              117,
+              116,
+              32,
+              115,
+              104,
+              111,
+              117,
+              108,
+              100,
+              32,
+              98,
+              101,
+              32,
+              39,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              103,
+              114,
+              97,
+              100,
+              117,
+              97,
+              116,
+              101,
+              100,
+              39,
+              32,
+              111,
+              114,
+              32,
+              39,
+              101,
+              120,
+              112,
+              101,
+              108,
+              108,
+              101,
+              100,
+              39,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              34,
+              117,
+              110,
+              107,
+              110,
+              111,
+              119,
+              110,
+              34,
+              44,
+              34,
+              99,
+              116,
+              120,
+              34,
+              58,
+              123,
+              34,
+              101,
+              120,
+              112,
+              101,
+              99,
+              116,
+              101,
+              100,
+              34,
+              58,
+              34,
+              39,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              39,
+              44,
+              32,
+              39,
+              103,
+              114,
+              97,
+              100,
+              117,
+              97,
+              116,
+              101,
+              100,
+              39,
+              32,
+              111,
+              114,
+              32,
+              39,
+              101,
+              120,
+              112,
+              101,
+              108,
+              108,
+              101,
+              100,
+              39,
+              34,
+              125,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 233
+        },
+        "id": "5dfa979c-38f2-4c2a-aed1-99e24f617e9c",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "query enum checked",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "aa7d5f4e-99d5-4f30-b706-d346e6dbdaea",
+          "length": 20,
+          "cycles": 1,
+          "position": 15,
+          "iteration": 0,
+          "httpRequestId": "c288c8e9-713f-4811-974c-441fcda6fb49"
+        },
+        "item": {
+          "id": "d32aa8e7-4ab2-44d8-8638-f3d2d657e650",
+          "name": "16 Reject id assignment",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"00000000-0000-4000-8000-000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "6060dcbc-c52e-43dd-aed1-0c20bfd4132e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('server id protected', () => pm.expect(pm.response.json().detail[0].type).to.eql('extra_forbidden'));"
+                ],
+                "_lastExecutionId": "33bb16f8-58cc-437c-8854-8b38caa8f8dd"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "785ad7f1-95f1-41b9-9ca1-f217adbec0aa",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "50",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"id\": \"00000000-0000-4000-8000-000000000000\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "ec0b98fd-003c-40be-9655-8c707109e28f",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "145"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              101,
+              120,
+              116,
+              114,
+              97,
+              95,
+              102,
+              111,
+              114,
+              98,
+              105,
+              100,
+              100,
+              101,
+              110,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              98,
+              111,
+              100,
+              121,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              69,
+              120,
+              116,
+              114,
+              97,
+              32,
+              105,
+              110,
+              112,
+              117,
+              116,
+              115,
+              32,
+              97,
+              114,
+              101,
+              32,
+              110,
+              111,
+              116,
+              32,
+              112,
+              101,
+              114,
+              109,
+              105,
+              116,
+              116,
+              101,
+              100,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              34,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              45,
+              48,
+              48,
+              48,
+              48,
+              45,
+              52,
+              48,
+              48,
+              48,
+              45,
+              56,
+              48,
+              48,
+              48,
+              45,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              48,
+              34,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 145
+        },
+        "id": "d32aa8e7-4ab2-44d8-8638-f3d2d657e650",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "server id protected",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "06d62e50-3086-487c-973e-a191be313d01",
+          "length": 20,
+          "cycles": 1,
+          "position": 16,
+          "iteration": 0,
+          "httpRequestId": "7b49b7e5-6d21-478c-b9ab-74f46ec2451c"
+        },
+        "item": {
+          "id": "05bb722f-92e5-4123-830f-bf910368e158",
+          "name": "17 Reject explicit null",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "28cbe406-5c3e-45be-8afe-1895bec13059",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('null rejected', () => pm.expect(pm.response.json().detail[0].type).to.eql('value_error'));"
+                ],
+                "_lastExecutionId": "c35cfbf0-5ad0-43d2-8c34-5d1c1a6aca09"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "49ad1e62-1bdb-47a5-b5a7-4a9da0488d64",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "19",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": null\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "9e878888-79f0-4a84-a21b-9fc728ce3922",
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "188"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              91,
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              118,
+              97,
+              108,
+              117,
+              101,
+              95,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              44,
+              34,
+              108,
+              111,
+              99,
+              34,
+              58,
+              91,
+              34,
+              98,
+              111,
+              100,
+              121,
+              34,
+              93,
+              44,
+              34,
+              109,
+              115,
+              103,
+              34,
+              58,
+              34,
+              86,
+              97,
+              108,
+              117,
+              101,
+              32,
+              101,
+              114,
+              114,
+              111,
+              114,
+              44,
+              32,
+              208,
+              159,
+              208,
+              181,
+              209,
+              128,
+              208,
+              181,
+              208,
+              180,
+              208,
+              176,
+              208,
+              189,
+              209,
+              150,
+              32,
+              208,
+              191,
+              208,
+              190,
+              208,
+              187,
+              209,
+              143,
+              32,
+              208,
+              189,
+              208,
+              181,
+              32,
+              208,
+              188,
+              208,
+              190,
+              208,
+              182,
+              209,
+              131,
+              209,
+              130,
+              209,
+              140,
+              32,
+              208,
+              188,
+              208,
+              176,
+              209,
+              130,
+              208,
+              184,
+              32,
+              208,
+              183,
+              208,
+              189,
+              208,
+              176,
+              209,
+              135,
+              208,
+              181,
+              208,
+              189,
+              208,
+              189,
+              209,
+              143,
+              32,
+              110,
+              117,
+              108,
+              108,
+              34,
+              44,
+              34,
+              105,
+              110,
+              112,
+              117,
+              116,
+              34,
+              58,
+              123,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              125,
+              44,
+              34,
+              99,
+              116,
+              120,
+              34,
+              58,
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              123,
+              125,
+              125,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 188
+        },
+        "id": "05bb722f-92e5-4123-830f-bf910368e158",
+        "assertions": [
+          {
+            "assertion": "status is 422",
+            "skipped": false
+          },
+          {
+            "assertion": "null rejected",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "3dc12841-18b3-4e4b-ae71-9faf7f0ecbd6",
+          "length": 20,
+          "cycles": 1,
+          "position": 17,
+          "iteration": 0,
+          "httpRequestId": "74c3d816-d9f5-4574-9ccc-bd407e4967a9"
+        },
+        "item": {
+          "id": "896f86c2-91a1-4735-b4a4-864d2c79e018",
+          "name": "18 Create second student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"second+{{run_token}}@example.com\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2e4afa78-bfbd-4bd9-b8a2-935b0606feb7",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('second UUID differs', () => pm.expect(pm.response.json().id).not.to.eql(pm.collectionVariables.get('student_id')));",
+                  "pm.collectionVariables.set('second_email', pm.response.json().email);"
+                ],
+                "_lastExecutionId": "99756010-f652-42d1-81ed-0bf44931daf2"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "b6ba087b-01ed-4103-8c9b-b8c08e83e325",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "172",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"full_name\": \"Олена Коваль\",\n  \"email\": \"second+c2fed0dd-2837-423e-b9f5-2d71f6f92e15@example.com\",\n  \"group_code\": \"КН-31\",\n  \"academic_status\": \"active\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "1c81b09a-9812-4cfc-ba4d-440158a9a6f8",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "199"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            },
+            {
+              "key": "location",
+              "value": "/api/v1/students/ad0115a9-6d65-4a7e-82d3-d22ccd96a49e"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              101,
+              99,
+              111,
+              110,
+              100,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              49,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              116,
+              105,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              97,
+              100,
+              48,
+              49,
+              49,
+              53,
+              97,
+              57,
+              45,
+              54,
+              100,
+              54,
+              53,
+              45,
+              52,
+              97,
+              55,
+              101,
+              45,
+              56,
+              50,
+              100,
+              51,
+              45,
+              100,
+              50,
+              50,
+              99,
+              99,
+              100,
+              57,
+              54,
+              97,
+              52,
+              57,
+              101,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 2,
+          "responseSize": 199
+        },
+        "id": "896f86c2-91a1-4735-b4a4-864d2c79e018",
+        "assertions": [
+          {
+            "assertion": "status is 201",
+            "skipped": false
+          },
+          {
+            "assertion": "second UUID differs",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "213f7b4d-3dc0-4a84-900e-3e86686995fd",
+          "length": 20,
+          "cycles": 1,
+          "position": 18,
+          "iteration": 0,
+          "httpRequestId": "a967c258-9ef9-4f12-9ddd-1d41cc822504"
+        },
+        "item": {
+          "id": "2d81a583-6da4-4be6-ae67-19008f3daa12",
+          "name": "19 Email conflict on PATCH",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PATCH",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{second_email}}\",\n  \"group_code\": \"КН-33\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2f5f7fc3-10f9-4180-905a-471a612a3416",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                  "pm.test('update detects conflict', () => pm.expect(pm.response.json().detail.code).to.eql('duplicate_email'));"
+                ],
+                "_lastExecutionId": "6393626a-a539-4206-81e2-f76e77391704"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "86fb3b43-6736-43f7-b2c5-05240673a28a",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "99",
+              "system": true
+            }
+          ],
+          "method": "PATCH",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"second+c2fed0dd-2837-423e-b9f5-2d71f6f92e15@example.com\",\n  \"group_code\": \"КН-33\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          }
+        },
+        "response": {
+          "id": "46dbf062-fba3-4116-ac2e-d4452d26a381",
+          "status": "Conflict",
+          "code": 409,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "123"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              100,
+              117,
+              112,
+              108,
+              105,
+              99,
+              97,
+              116,
+              101,
+              95,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              208,
+              149,
+              208,
+              187,
+              208,
+              181,
+              208,
+              186,
+              209,
+              130,
+              209,
+              128,
+              208,
+              190,
+              208,
+              189,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              176,
+              208,
+              180,
+              209,
+              128,
+              208,
+              181,
+              209,
+              129,
+              208,
+              176,
+              32,
+              208,
+              178,
+              208,
+              182,
+              208,
+              181,
+              32,
+              208,
+              178,
+              208,
+              184,
+              208,
+              186,
+              208,
+              190,
+              209,
+              128,
+              208,
+              184,
+              209,
+              129,
+              209,
+              130,
+              208,
+              190,
+              208,
+              178,
+              209,
+              131,
+              209,
+              148,
+              209,
+              130,
+              209,
+              140,
+              209,
+              129,
+              209,
+              143,
+              34,
+              125,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 123
+        },
+        "id": "2d81a583-6da4-4be6-ae67-19008f3daa12",
+        "assertions": [
+          {
+            "assertion": "status is 409",
+            "skipped": false
+          },
+          {
+            "assertion": "update detects conflict",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "e365a0d5-7f7a-411d-b921-6540ae96bf1f",
+          "length": 20,
+          "cycles": 1,
+          "position": 19,
+          "iteration": 0,
+          "httpRequestId": "c6ed794d-7559-4020-b8db-059fe8af53ba"
+        },
+        "item": {
+          "id": "b3c5dd5a-5bc3-43dd-81a5-a6e3c10b2699",
+          "name": "20 Verify atomicity",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "students",
+                "{{student_id}}"
+              ],
+              "host": [
+                "{{base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4af7dad5-f0a4-43a6-9df8-0f1cd87eb318",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rejected updates had no effect', () => pm.expect(pm.response.json()).to.eql(JSON.parse(pm.collectionVariables.get('after'))));"
+                ],
+                "_lastExecutionId": "c1900005-1187-414d-8ea1-eeb332dbafc8"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "57508",
+            "path": [
+              "api",
+              "v1",
+              "students",
+              "b6d5e308-d273-4559-ad75-e504dd937a16"
+            ],
+            "host": [
+              "127",
+              "0",
+              "0",
+              "1"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "9d868228-b098-49fb-b1d0-2a5ab3ed8df5",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "127.0.0.1:57508",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "041071f7-e02e-4a05-b5d1-670d468ce832",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Fri, 30 Oct 2026 15:59:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "208"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              208,
+              158,
+              208,
+              187,
+              208,
+              181,
+              208,
+              189,
+              208,
+              176,
+              32,
+              208,
+              154,
+              208,
+              190,
+              208,
+              178,
+              208,
+              176,
+              208,
+              187,
+              209,
+              140,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              115,
+              116,
+              117,
+              100,
+              101,
+              110,
+              116,
+              43,
+              99,
+              50,
+              102,
+              101,
+              100,
+              48,
+              100,
+              100,
+              45,
+              50,
+              56,
+              51,
+              55,
+              45,
+              52,
+              50,
+              51,
+              101,
+              45,
+              98,
+              57,
+              102,
+              53,
+              45,
+              50,
+              100,
+              55,
+              49,
+              102,
+              54,
+              102,
+              57,
+              50,
+              101,
+              49,
+              53,
+              64,
+              101,
+              120,
+              97,
+              109,
+              112,
+              108,
+              101,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              208,
+              154,
+              208,
+              157,
+              45,
+              51,
+              50,
+              34,
+              44,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              97,
+              99,
+              97,
+              100,
+              101,
+              109,
+              105,
+              99,
+              95,
+              108,
+              101,
+              97,
+              118,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              54,
+              100,
+              53,
+              101,
+              51,
+              48,
+              56,
+              45,
+              100,
+              50,
+              55,
+              51,
+              45,
+              52,
+              53,
+              53,
+              57,
+              45,
+              97,
+              100,
+              55,
+              53,
+              45,
+              101,
+              53,
+              48,
+              52,
+              100,
+              100,
+              57,
+              51,
+              55,
+              97,
+              49,
+              54,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1,
+          "responseSize": 208
+        },
+        "id": "b3c5dd5a-5bc3-43dd-81a5-a6e3c10b2699",
+        "assertions": [
+          {
+            "assertion": "status is 200",
+            "skipped": false
+          },
+          {
+            "assertion": "rejected updates had no effect",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 3389
+    },
+    "failures": [],
+    "error": null
+  }
+}

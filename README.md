@@ -1,98 +1,87 @@
-# Digital Dean API — стартовий проєкт
+# Цифровий деканат - Практична робота 1
 
-Цей репозиторій є стартовою кодовою базою наскрізного навчального проєкту «Цифровий деканат». Не створюйте окремий застосунок для наступної практичної роботи: розвивайте власний форк цього репозиторію і зберігайте сумісність реалізованих маршрутів.
+Готовий FastAPI API. Номер у списку **15**, варіант **3** - `academic_status`.
 
-## Отримання власного репозиторію
+## Запуск у Windows
 
-1. Відкрийте базовий репозиторій: <https://github.com/serhii-ch-eu/digital-dean-api-starter>.
-2. Увійдіть у GitHub і натисніть **Fork**, щоб створити пов’язану копію у власному обліковому записі.
-3. Клонуйте саме власний форк, замінивши `<login>` своїм логіном GitHub:
+Розпакуйте архів. Установіть Python 3.12+ з pip, відкрийте папку проєкту.
+Запустіть **setup.cmd**, після завершення - **start.cmd**.
+Відкрийте http://127.0.0.1:8000/docs. Для тестів запустіть **test.cmd**.
+Зупиняйте сервер через Ctrl+C. Для першого встановлення потрібен інтернет.
 
-```bash
-git clone https://github.com/<login>/digital-dean-api-starter.git digital-dean-api
-cd digital-dean-api
-```
-
-4. Додайте базовий репозиторій як `upstream` і створіть робочу гілку:
-
-```bash
-git remote add upstream https://github.com/serhii-ch-eu/digital-dean-api-starter.git
-git remote -v
-git switch -c practice-01
-```
-
-Після цих команд `origin` має вказувати на ваш форк, а `upstream` — на базовий репозиторій викладача. Не надсилайте зміни безпосередньо до базового репозиторію.
-
-## Підготовка середовища
-
-```bash
-python -m venv .venv
-```
-
-Активація в macOS або Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Активація в Windows PowerShell:
+Або виконайте у PowerShell у папці з pyproject.toml:
 
 ```powershell
-.venv\Scripts\Activate.ps1
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Інсталяція залежностей:
+Окремий термінал для тестів:
 
-```bash
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+```powershell
+.\.venv\Scripts\python.exe -m pytest
 ```
 
-## Запуск
+У Linux/macOS: `python3 -m venv .venv`, потім `.venv/bin/python -m pip install -e ".[dev]"`
+та `.venv/bin/python -m uvicorn app.main:app --reload`.
 
-```bash
-python -m uvicorn app.main:app --reload
+## Документація та результати
+
+- [Повний гайд запуску](docs/launch-guide.md)
+- [Звіт із практичної роботи](docs/report.md) - заповніть титульні дані та посилання після публікації
+- [Контракт OpenAPI](docs/openapi.json); актуальна схема - `/openapi.json`
+- [Результат pytest](evidence/pytest.txt): **57 passed**, одне попередження бібліотеки
+- [Результат колекції](evidence/newman.txt): **20 запитів, 42 твердження, 0 провалів**
+- [Машинний звіт Newman](evidence/newman-results.json), [підсумок](evidence/summary.json)
+- `requirements-tested.txt` - точні версії перевіреного Windows-середовища
+
+## Контракт API
+
+| Метод | Шлях | Успіх | Помилки |
+| --- | --- | --- | --- |
+| GET | /health | 200 | - |
+| POST | /api/v1/students | 201 | 409, 422 |
+| GET | /api/v1/students | 200 | 422 |
+| GET | /api/v1/students/{student_id} | 200 | 404, 422 |
+| PATCH | /api/v1/students/{student_id} | 200 | 404, 409, 422 |
+
+Приклад POST:
+
+```json
+{"full_name":"Олена Коваль","email":"olena.koval@example.com","group_code":"КН-31","academic_status":"active"}
 ```
 
-Перевірте:
+`full_name`: 5-120 символів після обрізання пробілів; `email`: EmailStr, унікальність
+без урахування регістру; `group_code`: `^[A-ZА-ЩЬЮЯЄІЇҐ0-9]+-[0-9]{2}$`.
+Навчальні стани: `active` - навчається, `academic_leave` - академічна відпустка,
+`graduated` - завершив навчання, `expelled` - відрахований. Вони чутливі до регістру.
+Фільтр: `GET /api/v1/students?academic_status=active`.
 
-- `http://127.0.0.1:8000/health`
-- `http://127.0.0.1:8000/docs`
-- `http://127.0.0.1:8000/openapi.json`
+PATCH змінює тільки передані поля. `{}`, `null` у переданому полі, `id` і невідомі
+поля відхиляються. Унікальність email перевіряється і при PATCH із виключенням
+поточного запису. Конфлікт не змінює жодного поля.
 
-## Тести
+## Колекція Postman
 
-```bash
-python -m pytest
+Імпортуйте `postman/digital-dean-practice-01.postman_collection.json`.
+Установіть `base_url` = `http://127.0.0.1:8000`, запустіть усі запити послідовно.
+Колекція зберігає student_id і використовує нові навчальні email на кожен прохід.
+Альтернатива за наявності Node.js/npm:
+
+```text
+npx --yes newman@6.2.3 run postman/digital-dean-practice-01.postman_collection.json
 ```
 
-На старті проходить лише перевірка `/health`. Реалізуйте схеми, репозиторій, маршрути та решту тестів відповідно до документа практичної роботи.
+## Git
 
-## Фіксація та публікація змін
+Основа: https://github.com/serhii-ch-eu/digital-dean-api-starter.
+У корені комплекту є `practice-01.bundle` із повною локальною історією, гілкою
+та тегом practice-01. Інструкція відновлення та публікації у власний форк - у гайді.
+Віддалена публікація автоматично не виконувалася.
 
-Створіть щонайменше три змістові фіксації: окремо для каркаса моделей, маршрутів і перевірок. Додавайте до кожної фіксації лише пов’язані завершені зміни. Наприклад:
+## Межі
 
-```bash
-git add app/schemas tests
-git commit -m "Implement student data models"
-
-git add app/api app/repositories
-git commit -m "Implement student API routes"
-
-git add tests postman
-git commit -m "Add API verification scenarios"
-```
-
-Після успішного виконання тестів опублікуйте гілку та фінальний тег у власному форку:
-
-```bash
-git push -u origin practice-01
-git tag practice-01
-git push origin tag practice-01
-```
-
-Для наступних практичних робіт продовжуйте розвивати цей самий форк та історію Git; не створюйте непов’язаний репозиторій.
-
-## Правила роботи з даними
-
-Використовуйте тільки вигадані записи. Не додавайте паролі, токени, приватні ключі, файли `.env` або реальні персональні дані до репозиторію.
+Репозиторій зберігає дані в памʼяті одного процесу; перезапуск і --reload їх очищують.
+Видалення, база даних, авторизація, TLS та аудит не реалізовані в цій роботі.
+Використовуйте лише вигадані дані. Запускайте локально, без додаткових workers.
