@@ -9,7 +9,7 @@ from app.repositories.student_repository import (
 
 def create_app() -> FastAPI:
     application = FastAPI(
-        title="Digital Dean API", version="0.1.0",
+        title="Digital Dean API", version="0.2.0",
         description="Практична робота 1. Номер у списку 15, варіант 3 — academic_status.",
     )
     application.state.student_repository = InMemoryStudentRepository()
@@ -30,6 +30,14 @@ def create_app() -> FastAPI:
             "code": "duplicate_email", "message": "Електронна адреса вже використовується",
         }})
 
+    from app.security.keys import create_process_key
+    from app.repositories.secure_note_repository import SecureNoteRepository
+    from app.api.secure_notes import router as note_router
+    from app.api.crypto_lab import router as crypto_router
+    application.state.process_key = create_process_key()
+    application.state.note_repository = SecureNoteRepository()
+    application.include_router(note_router)
+    application.include_router(crypto_router)
     application.include_router(students_router)
     return application
 
