@@ -10,6 +10,6 @@ NONCE_BYTES = 12
 TAG_BYTES = 16
 
 
-def validate_profile(algorithm: str, key: bytes, nonce: bytes) -> None:
-    """TODO: відхилити невідомий алгоритм і неправильні довжини."""
-    raise NotImplementedError("Implement profile validation")
+def validate_profile(algorithm, key, nonce):
+    if algorithm not in KEY_BYTES or not isinstance(key,bytes) or len(key)!=KEY_BYTES[algorithm] or not isinstance(nonce,bytes) or len(nonce)!=12:
+        raise ValueError('Invalid cipher profile')
